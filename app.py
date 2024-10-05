@@ -11,7 +11,7 @@ st.title("PDF Editor")
 # サイドバーで処理を選択
 option = st.sidebar.radio(
     "Select an action",
-    options=["Merge PDFs", "Rotate PDF", "Reorder Pages"]
+    options=["Merge PDFs", "Rotate Pages", "Reorder Pages"]
 )
 
 def merge_pdfs(pdf_list, merge_order):
@@ -127,7 +127,7 @@ if option == "Merge PDFs":
             st.session_state.pdf_images_.append(convert_from_bytes(file.read(), first_page=0, last_page=1))
 
         # 選択されたページのインデックスをセッションステートで保持
-        if 'merge_order' not in st.session_state:
+        if "merge_order" not in st.session_state:
             st.session_state.merge_order = []
 
         if any(m + 1 > len(st.session_state.pdf_images_) for m in st.session_state.merge_order):
@@ -173,19 +173,25 @@ if option == "Merge PDFs":
         st.info("Please upload PDF files to merge.")
 
 # Rotate PDF UI
-elif option == "Rotate PDF":
-    st.header("Rotate PDF")
+elif option == "Rotate Pages":
+    st.header("Rotate Pages")
     uploaded_file = st.file_uploader("Upload a PDF file to rotate", type=["pdf"])
 
     if uploaded_file:
+        if st.button("Reset"):
+            del st.session_state.pdf_images
+            del st.session_state.selected_pages
+            if "rotated_pdf" in st.session_state:
+                del st.session_state.rotated_pdf
+
         # PDFを画像に変換してサムネイルを表示
-        if 'pdf_images' not in st.session_state or st.session_state.pdf_images is None:
+        if "pdf_images" not in st.session_state or st.session_state.pdf_images is None:
             st.session_state.pdf_images = convert_from_bytes(uploaded_file.read())
 
         # 選択されたページのインデックスをセッションステートで保持
-        if 'selected_pages' not in st.session_state:
+        if "selected_pages" not in st.session_state:
             st.session_state.selected_pages = []
-
+        
         st.write("Click on a thumbnail to select/deselect pages for rotation:")
 
         # 列を用いてサムネイルを横方向に並べる
@@ -217,7 +223,7 @@ elif option == "Rotate PDF":
 
         if st.button("Rotate"):
             if st.session_state.selected_pages:
-                if 'rotated_pdf' in st.session_state:
+                if "rotated_pdf" in st.session_state:
                     st.session_state.rotated_pdf = rotate_pdf(st.session_state.rotated_pdf, rotation_angle, st.session_state.selected_pages)
                 else:
                     st.session_state.rotated_pdf = rotate_pdf(uploaded_file, rotation_angle, st.session_state.selected_pages)
@@ -230,7 +236,7 @@ elif option == "Rotate PDF":
             else:
                 st.error("Please select at least one page to rotate.")
         
-        if 'rotated_pdf' in st.session_state:
+        if "rotated_pdf" in st.session_state:
             # ダウンロードボタン
             base_name, _ = os.path.splitext(uploaded_file.name)
             st.download_button(
@@ -249,12 +255,18 @@ elif option == "Reorder Pages":
     uploaded_file = st.file_uploader("Upload a PDF file to reorder", type=["pdf"])
 
     if uploaded_file:
+        if st.button("Reset"):
+            del st.session_state.pdf_images
+            del st.session_state.selected_pages
+            if "reordered_pdf" in st.session_state:
+                del st.session_state.reordered_pdf
+
         # PDFを画像に変換してサムネイルを表示
-        if 'pdf_images' not in st.session_state or st.session_state.pdf_images is None:
+        if "pdf_images" not in st.session_state or st.session_state.pdf_images is None:
             st.session_state.pdf_images = convert_from_bytes(uploaded_file.read())
 
         # 選択されたページのインデックスをセッションステートで保持
-        if 'selected_pages' not in st.session_state:
+        if "selected_pages" not in st.session_state:
             st.session_state.selected_pages = []
 
         st.write("Click on a thumbnail to select/deselect pages for reordering:")
@@ -292,7 +304,7 @@ elif option == "Reorder Pages":
 
         if st.button("Reorder"):
             if st.session_state.selected_pages:
-                if 'reordered_pdf' in st.session_state:
+                if "reordered_pdf" in st.session_state:
                     st.session_state.reordered_pdf = reorder_pages(st.session_state.reordered_pdf, st.session_state.selected_pages, target_page)
                 else:
                     st.session_state.reordered_pdf = reorder_pages(uploaded_file, st.session_state.selected_pages, target_page)
@@ -305,7 +317,7 @@ elif option == "Reorder Pages":
             else:
                 st.error("Please select at least one page to reorder.")
 
-        if 'reordered_pdf' in st.session_state:
+        if "reordered_pdf" in st.session_state:
             base_name, _ = os.path.splitext(uploaded_file.name)
             # ダウンロードボタン
             st.download_button(
@@ -316,5 +328,3 @@ elif option == "Reorder Pages":
             )
     else:
         st.info("Please upload a PDF file to reorder.")
-
-# popplerを入れないとconvert_from_bytesの結果を表示できなかったので注意
