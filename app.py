@@ -1,3 +1,5 @@
+import hashlib
+import pickle
 import streamlit as st
 from pypdf import PdfReader, PdfWriter
 from pdf2image import convert_from_bytes
@@ -111,6 +113,13 @@ def resize_and_add_black_border(img, target_width, target_height):
 
     return new_image
 
+def calculate_object_hash(obj):
+    # オブジェクトをバイト列にシリアライズ化する
+    obj_bytes = pickle.dumps(obj)
+    # ハッシュ化
+    return hashlib.md5(obj_bytes).hexdigest()
+
+
 cols_per_row = 3  # 1行に並べるサムネイルの数
 width_ = 200
 height_ = 200
@@ -122,6 +131,12 @@ if option == "Merge PDFs":
     uploaded_file = st.file_uploader("Upload PDF files", type=["pdf"], accept_multiple_files=True)
 
     if uploaded_file:
+        if "file_hash_m" in st.session_state and st.session_state.file_hash_m != calculate_object_hash(uploaded_file):
+            del st.session_state.pdf_images_
+            del st.session_state.merge_order
+
+        st.session_state.file_hash_m = calculate_object_hash(uploaded_file)
+
         st.session_state.pdf_images_ = []
         for file in uploaded_file:
             st.session_state.pdf_images_.append(convert_from_bytes(file.read(), first_page=0, last_page=1))
@@ -178,11 +193,13 @@ elif option == "Rotate Pages":
     uploaded_file = st.file_uploader("Upload a PDF file to rotate", type=["pdf"])
 
     if uploaded_file:
-        if st.button("Reset"):
+        if "file_hash_ro" in st.session_state and st.session_state.file_hash_ro != calculate_object_hash(uploaded_file):
             del st.session_state.pdf_images
             del st.session_state.selected_pages
             if "rotated_pdf" in st.session_state:
                 del st.session_state.rotated_pdf
+
+        st.session_state.file_hash_ro = calculate_object_hash(uploaded_file)
 
         # PDFを画像に変換してサムネイルを表示
         if "pdf_images" not in st.session_state or st.session_state.pdf_images is None:
@@ -255,11 +272,13 @@ elif option == "Reorder Pages":
     uploaded_file = st.file_uploader("Upload a PDF file to reorder", type=["pdf"])
 
     if uploaded_file:
-        if st.button("Reset"):
+        if "file_hash_re" in st.session_state and st.session_state.file_hash_re != calculate_object_hash(uploaded_file):
             del st.session_state.pdf_images
             del st.session_state.selected_pages
             if "reordered_pdf" in st.session_state:
                 del st.session_state.reordered_pdf
+
+        st.session_state.file_hash_re = calculate_object_hash(uploaded_file)
 
         # PDFを画像に変換してサムネイルを表示
         if "pdf_images" not in st.session_state or st.session_state.pdf_images is None:
