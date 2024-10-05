@@ -14,15 +14,15 @@ option = st.sidebar.radio(
     options=["Merge PDFs", "Rotate PDF", "Reorder Pages"]
 )
 
-# 関数のガワを定義
-def merge_pdfs(pdf_files):
+def merge_pdfs(pdf_list, merge_order):
     pdf_writer = PdfWriter()
-    for pdf_file in pdf_files:
+    
+    for idx in merge_order:
+        pdf_file = pdf_list[idx]
         pdf_reader = PdfReader(pdf_file)
         for page_num in range(len(pdf_reader.pages)):
             pdf_writer.add_page(pdf_reader.pages[page_num])
-    
-    # 結果をBytesIOに保存
+
     output = BytesIO()
     pdf_writer.write(output)
     output.seek(0)
@@ -111,25 +111,66 @@ def resize_and_add_black_border(img, target_width, target_height):
 
     return new_image
 
+cols_per_row = 3  # 1行に並べるサムネイルの数
+width_ = 200
+height_ = 200
+
 # Merge PDFs UI
 if option == "Merge PDFs":
     st.header("Merge PDFs")
-    uploaded_files = st.file_uploader("Upload PDF files to merge", accept_multiple_files=True, type=["pdf"])
     
-    if st.button("Merge"):
-        if uploaded_files:
-            merged_pdf = merge_pdfs(uploaded_files)
-            st.success("PDFs merged successfully!")
-            
-            # ダウンロードボタン
+    uploaded_file = st.file_uploader("Upload PDF files", type=["pdf"], accept_multiple_files=True)
+
+    if uploaded_file:
+        st.session_state.pdf_images_ = []
+        for file in uploaded_file:
+            st.session_state.pdf_images_.append(convert_from_bytes(file.read(), first_page=0, last_page=1))
+
+        # 選択されたページのインデックスをセッションステートで保持
+        if 'merge_order' not in st.session_state:
+            st.session_state.merge_order = []
+
+        if any(m + 1 > len(st.session_state.pdf_images_) for m in st.session_state.merge_order):
+            st.session_state.merge_order = []
+
+        st.write("Click on the PDF number to select the merge order.")
+
+        # サムネイルの表示と操作
+        cols = st.columns(cols_per_row)
+
+        for i, (pdf_image) in enumerate(st.session_state.pdf_images_):
+            col = cols[i % cols_per_row]
+            with col:
+                # サムネイル表示
+                if st.button(f"PDF {i+1}", key=f"PDF_{i+1}"):
+                    # 順番を選択
+                    if i in st.session_state.merge_order:
+                        st.session_state.merge_order.remove(i)
+                    else:
+                        st.session_state.merge_order.append(i)
+
+                # サムネイル画像を表示
+                tmp_image = resize_and_add_black_border(pdf_image[0], width_, height_)
+                # st.image(tmp_image[0], caption=f"Page {i+1}", width=width_)
+                st.image(tmp_image, caption=f"PDF {i+1}", width=200)
+
+        # 選択された順番を表示
+        if st.session_state.merge_order:
+            st.write(f"Selected merge order: {[i + 1 for i in st.session_state.merge_order]}")
+        else:
+            st.write("No PDF selected for merging.")
+
+        # マージボタン
+        if st.session_state.merge_order:
+            merged_pdfs = merge_pdfs(uploaded_file, st.session_state.merge_order)
             st.download_button(
                 label="Download Merged PDF",
-                data=merged_pdf,
-                file_name="merged.pdf",
+                data=merged_pdfs,
+                file_name="merged_pdfs.pdf",
                 mime="application/pdf"
             )
-        else:
-            st.error("Please upload at least two PDF files.")
+    else:
+        st.info("Please upload PDF files to merge.")
 
 # Rotate PDF UI
 elif option == "Rotate PDF":
@@ -148,9 +189,6 @@ elif option == "Rotate PDF":
         st.write("Click on a thumbnail to select/deselect pages for rotation:")
 
         # 列を用いてサムネイルを横方向に並べる
-        cols_per_row = 3  # 1行に並べるサムネイルの数
-        width_ = 200
-        height_ = 200
         cols = st.columns(cols_per_row)
 
         for i, image in enumerate(st.session_state.pdf_images):
@@ -204,6 +242,7 @@ elif option == "Rotate PDF":
 
     else:
         st.info("Please upload a PDF file to see available pages.")
+
 # Reorder Pages UI
 elif option == "Reorder Pages":
     st.header("Reorder Pages")
@@ -221,9 +260,6 @@ elif option == "Reorder Pages":
         st.write("Click on a thumbnail to select/deselect pages for reordering:")
 
         # サムネイルの表示
-        cols_per_row = 3  # 1行に並べるサムネイルの数
-        width_ = 200
-        height_ = 200
         cols = st.columns(cols_per_row)
 
         for i, image in enumerate(st.session_state.pdf_images):
@@ -268,12 +304,14 @@ elif option == "Reorder Pages":
                 st.rerun()
             else:
                 st.error("Please select at least one page to reorder.")
+
         if 'reordered_pdf' in st.session_state:
+            base_name, _ = os.path.splitext(uploaded_file.name)
             # ダウンロードボタン
             st.download_button(
                 label="Download Reordered PDF",
                 data=st.session_state.reordered_pdf,
-                file_name="reordered.pdf",
+                file_name=base_name + "_reordered.pdf",
                 mime="application/pdf"
             )
     else:
