@@ -8,6 +8,11 @@ from PIL import Image
 from pypdf import PdfReader, PdfWriter
 import streamlit as st
 
+st.set_page_config(
+    page_title="PDF Editor",
+    layout="wide",
+)
+
 st.title("PDF Editor")
 
 option = st.sidebar.radio(
