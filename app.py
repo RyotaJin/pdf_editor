@@ -194,6 +194,14 @@ elif option == "Rotate Pages":
         if "selected_pages" not in st.session_state:
             st.session_state.selected_pages = []
         
+        if st.button("Reset to Original"):
+            st.session_state.pdf_images = convert_from_bytes(uploaded_file.read())
+            st.session_state.selected_pages = []
+            if "updated_pdf" in st.session_state:
+                del st.session_state.updated_pdf
+            st.success("PDF has been reset to the original upload state!")
+            st.rerun()
+
         st.write("Click on a thumbnail to select/deselect pages for rotation:")
 
         cols = st.columns(cols_per_row)
@@ -260,6 +268,14 @@ elif option == "Reorder Pages":
 
         if "selected_pages" not in st.session_state:
             st.session_state.selected_pages = []
+
+        if st.button("Reset to Original"):
+            st.session_state.pdf_images = convert_from_bytes(uploaded_file.read())
+            st.session_state.selected_pages = []
+            if "updated_pdf" in st.session_state:
+                del st.session_state.updated_pdf
+            st.success("PDF has been reset to the original upload state!")
+            st.rerun()
 
         st.write("Click on a thumbnail to select/deselect pages for reordering:")
 
@@ -329,6 +345,14 @@ elif option == "Delete or Extract Pages":
 
         if "selected_pages" not in st.session_state:
             st.session_state.selected_pages = []
+
+        if st.button("Reset to Original"):
+            st.session_state.pdf_images = convert_from_bytes(uploaded_file.read())
+            st.session_state.selected_pages = []
+            if "updated_pdf" in st.session_state:
+                del st.session_state.updated_pdf
+            st.success("PDF has been reset to the original upload state!")
+            st.rerun()
 
         st.write("Click on a thumbnail to select/deselect pages to delete or extract:")
 
