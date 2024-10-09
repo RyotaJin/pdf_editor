@@ -8,11 +8,16 @@ from PIL import Image
 from pypdf import PdfReader, PdfWriter
 import streamlit as st
 
+st.set_page_config(
+    page_title="PDF Editor",
+    layout="wide",
+)
+
 st.title("PDF Editor")
 
 option = st.sidebar.radio(
     "Select an action",
-    options=["Merge PDFs", "Rotate Pages", "Reorder Pages"]
+    options=["Merge PDFs", "Rotate Pages", "Reorder Pages", "Delete or Extract Pages"]
 )
 
 st.header(option)
@@ -87,6 +92,31 @@ def resize_and_add_black_border(img, target_width, target_height):
     new_image.paste(img, (offset_x, offset_y))
 
     return new_image
+
+def delete_pages(pdf_file, selected_pages):
+    pdf_reader = PdfReader(pdf_file)
+    pdf_writer = PdfWriter()
+
+    for page_num, page in enumerate(pdf_reader.pages):
+        if page_num not in selected_pages:
+            pdf_writer.add_page(page)
+    
+    output = BytesIO()
+    pdf_writer.write(output)
+    output.seek(0)
+    return output
+
+def extract_pages(pdf_file, selected_pages):
+    pdf_reader = PdfReader(pdf_file)
+    pdf_writer = PdfWriter()
+
+    for page_num in selected_pages:
+        pdf_writer.add_page(pdf_reader.pages[page_num])
+    
+    output = BytesIO()
+    pdf_writer.write(output)
+    output.seek(0)
+    return output
 
 def calculate_object_hash(obj):
     obj_bytes = pickle.dumps(obj)
@@ -169,6 +199,14 @@ elif option == "Rotate Pages":
         if "selected_pages" not in st.session_state:
             st.session_state.selected_pages = []
         
+        if st.button("Reset to Original"):
+            st.session_state.pdf_images = convert_from_bytes(uploaded_file.read())
+            st.session_state.selected_pages = []
+            if "updated_pdf" in st.session_state:
+                del st.session_state.updated_pdf
+            st.success("PDF has been reset to the original upload state!")
+            st.rerun()
+
         st.write("Click on a thumbnail to select/deselect pages for rotation:")
 
         cols = st.columns(cols_per_row)
@@ -236,6 +274,14 @@ elif option == "Reorder Pages":
         if "selected_pages" not in st.session_state:
             st.session_state.selected_pages = []
 
+        if st.button("Reset to Original"):
+            st.session_state.pdf_images = convert_from_bytes(uploaded_file.read())
+            st.session_state.selected_pages = []
+            if "updated_pdf" in st.session_state:
+                del st.session_state.updated_pdf
+            st.success("PDF has been reset to the original upload state!")
+            st.rerun()
+
         st.write("Click on a thumbnail to select/deselect pages for reordering:")
 
         cols = st.columns(cols_per_row)
@@ -287,3 +333,80 @@ elif option == "Reorder Pages":
             )
     else:
         st.info("Please upload a PDF file to reorder.")
+elif option == "Delete or Extract Pages":
+    uploaded_file = st.file_uploader("Upload a PDF file to delete or extract pages", type=["pdf"])
+
+    if uploaded_file:
+        if "file_hash_del_ext" in st.session_state and st.session_state.file_hash_del_ext != calculate_object_hash(uploaded_file):
+            del st.session_state.pdf_images
+            del st.session_state.selected_pages
+            if "updated_pdf" in st.session_state:
+                del st.session_state.updated_pdf
+
+        st.session_state.file_hash_del_ext = calculate_object_hash(uploaded_file)
+
+        if "pdf_images" not in st.session_state or st.session_state.pdf_images is None:
+            st.session_state.pdf_images = convert_from_bytes(uploaded_file.read())
+
+        if "selected_pages" not in st.session_state:
+            st.session_state.selected_pages = []
+
+        if st.button("Reset to Original"):
+            st.session_state.pdf_images = convert_from_bytes(uploaded_file.read())
+            st.session_state.selected_pages = []
+            if "updated_pdf" in st.session_state:
+                del st.session_state.updated_pdf
+            st.success("PDF has been reset to the original upload state!")
+            st.rerun()
+
+        st.write("Click on a thumbnail to select/deselect pages to delete or extract:")
+
+        cols = st.columns(cols_per_row)
+
+        for i, image in enumerate(st.session_state.pdf_images):
+            col = cols[i % cols_per_row]
+            with col:
+                if st.button(f"Page {i+1}", key=f"page_del_ext_{i+1}"):
+                    if i in st.session_state.selected_pages:
+                        st.session_state.selected_pages.remove(i)
+                    else:
+                        st.session_state.selected_pages.append(i)
+
+                tmp_image = resize_and_add_black_border(image, width_, height_)
+                st.image(tmp_image, caption=f"Page {i+1}", width=width_)
+
+        if st.session_state.selected_pages:
+            st.write(f"Selected pages: {[i + 1 for i in st.session_state.selected_pages]}")
+        else:
+            st.write("No pages selected.")
+
+        if len(st.session_state.pdf_images) == 1:
+            action = st.radio("Choose action", ("Extract Selected Pages (Cannot delete. There is only one page.)"))
+        else:
+            action = st.radio("Choose action", ("Delete Selected Pages", "Extract Selected Pages"))
+
+        if st.button("Apply"):
+            if st.session_state.selected_pages:
+                if action == "Delete Selected Pages":
+                    st.session_state.updated_pdf = delete_pages(uploaded_file, st.session_state.selected_pages)
+                elif action == "Extract Selected Pages":
+                    st.session_state.updated_pdf = extract_pages(uploaded_file, st.session_state.selected_pages)
+                
+                st.success(f"Pages {action.lower()} successfully!")
+
+                st.session_state.pdf_images = convert_from_bytes(st.session_state.updated_pdf.read())
+                st.session_state.selected_pages = []
+                st.rerun()
+            else:
+                st.error("Please select at least one page.")
+
+        if "updated_pdf" in st.session_state:
+            base_name, _ = os.path.splitext(uploaded_file.name)
+            st.download_button(
+                label=f"Download {action.split()[0]}d PDF",
+                data=st.session_state.updated_pdf,
+                file_name=base_name + f"_{action.split()[0].lower()}d.pdf",
+                mime="application/pdf"
+            )
+    else:
+        st.info("Please upload a PDF file to delete or extract pages.")
