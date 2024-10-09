@@ -375,7 +375,10 @@ elif option == "Delete or Extract Pages":
         else:
             st.write("No pages selected.")
 
-        action = st.radio("Choose action", ("Delete Selected Pages", "Extract Selected Pages"))
+        if len(st.session_state.pdf_images) == 1:
+            action = st.radio("Choose action", ("Extract Selected Pages (Cannot delete. There is only one page.)"))
+        else:
+            action = st.radio("Choose action", ("Delete Selected Pages", "Extract Selected Pages"))
 
         if st.button("Apply"):
             if st.session_state.selected_pages:
