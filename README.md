@@ -44,10 +44,12 @@ The `pdf2image` library requires the Poppler utility to convert PDFs to images. 
 
 ## Running the Application
 
-Once all dependencies are installed, you can run the app with the following command:
+Once all dependencies are installed, you can run the app using the `activation_local.bat` file provided for Windows users. This script will automatically launch the Streamlit app using Poetry. 
+
+To start the application, simply double-click the `activation_local.bat` file, which contains the following command:
 
 ```bash
-streamlit run app.py
+poetry run streamlit run app.py
 ```
 
 This will open a new browser window where you can interact with the PDF editor.
