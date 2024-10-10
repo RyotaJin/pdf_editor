@@ -13,15 +13,6 @@ st.set_page_config(
     layout="wide",
 )
 
-st.title("PDF Editor")
-
-option = st.sidebar.radio(
-    "Select an action",
-    options=["Merge PDFs", "Rotate Pages", "Reorder Pages", "Delete or Extract Pages"]
-)
-
-st.header(option)
-
 def merge_pdfs(pdf_list, merge_order):
     pdf_writer = PdfWriter()
     
@@ -123,10 +114,20 @@ def calculate_object_hash(obj):
     return hashlib.md5(obj_bytes).hexdigest()
 
 
-cols_per_row = 3
-width_ = 200
-height_ = 200
+option = st.sidebar.radio(
+    "Select an action",
+    options=["Merge PDFs", "Rotate Pages", "Reorder Pages", "Delete or Extract Pages"]
+)
 
+with st.sidebar.expander("Settings", expanded=False):
+    cols_per_row = st.selectbox("Number of columns per row", options=[1, 2, 3, 4, 5, 6], index=2)
+
+    image_size = st.slider("Thumbnail size (width and height)", min_value=100, max_value=500, value=200)
+
+
+st.title("PDF Editor")
+
+st.header(option)
 
 if option == "Merge PDFs":
     uploaded_file = st.file_uploader("Upload PDF files", type=["pdf"], accept_multiple_files=True)
@@ -162,7 +163,7 @@ if option == "Merge PDFs":
                     else:
                         st.session_state.merge_order.append(i)
 
-                tmp_image = resize_and_add_black_border(pdf_image[0], width_, height_)
+                tmp_image = resize_and_add_black_border(pdf_image[0], image_size, image_size)
                 st.image(tmp_image, caption=f"PDF {i+1}", width=200)
 
         if st.session_state.merge_order:
@@ -220,8 +221,8 @@ elif option == "Rotate Pages":
                     else:
                         st.session_state.selected_pages.append(i)
 
-                tmp_image = resize_and_add_black_border(image, width_, height_)
-                st.image(tmp_image, caption=f"Page {i+1}", width=width_)
+                tmp_image = resize_and_add_black_border(image, image_size, image_size)
+                st.image(tmp_image, caption=f"Page {i+1}", width=image_size)
 
         if st.session_state.selected_pages:
             st.write(f"Selected pages: {[i + 1 for i in st.session_state.selected_pages]}")
@@ -295,8 +296,8 @@ elif option == "Reorder Pages":
                     else:
                         st.session_state.selected_pages.append(i)
 
-                tmp_image = resize_and_add_black_border(image, width_, height_)
-                st.image(tmp_image, caption=f"Page {i+1}", width=width_)
+                tmp_image = resize_and_add_black_border(image, image_size, image_size)
+                st.image(tmp_image, caption=f"Page {i+1}", width=image_size)
 
         if st.session_state.selected_pages:
             st.write(f"Selected pages: {[i + 1 for i in st.session_state.selected_pages]}")
@@ -372,8 +373,8 @@ elif option == "Delete or Extract Pages":
                     else:
                         st.session_state.selected_pages.append(i)
 
-                tmp_image = resize_and_add_black_border(image, width_, height_)
-                st.image(tmp_image, caption=f"Page {i+1}", width=width_)
+                tmp_image = resize_and_add_black_border(image, image_size, image_size)
+                st.image(tmp_image, caption=f"Page {i+1}", width=image_size)
 
         if st.session_state.selected_pages:
             st.write(f"Selected pages: {[i + 1 for i in st.session_state.selected_pages]}")
