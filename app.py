@@ -164,7 +164,7 @@ if option == "Merge PDFs":
                         st.session_state.merge_order.append(i)
 
                 tmp_image = resize_and_add_black_border(pdf_image[0], image_size, image_size)
-                st.image(tmp_image, caption=f"PDF {i+1}", width=200)
+                st.image(tmp_image, caption=f"PDF {i+1}", width=image_size)
 
         if st.session_state.merge_order:
             st.write(f"Selected merge order: {[i + 1 for i in st.session_state.merge_order]}")
