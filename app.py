@@ -150,6 +150,12 @@ if option == "Merge PDFs":
         if any(m + 1 > len(st.session_state.pdf_images_) for m in st.session_state.merge_order):
             st.session_state.merge_order = []
 
+        if st.button("Select All"):
+            st.session_state.merge_order = list(range(len(st.session_state.pdf_images_)))
+
+        if st.button("Reset Selection"):
+            st.session_state.merge_order = []
+
         st.write("Click on the PDF number to select the merge order.")
 
         cols = st.columns(cols_per_row)
@@ -207,6 +213,12 @@ elif option == "Rotate Pages":
                 del st.session_state.updated_pdf
             st.success("PDF has been reset to the original upload state!")
             st.rerun()
+
+        if st.button("Select All"):
+            st.session_state.selected_pages = list(range(len(st.session_state.pdf_images)))
+
+        if st.button("Reset Selection"):
+            st.session_state.selected_pages = []
 
         st.write("Click on a thumbnail to select/deselect pages for rotation:")
 
@@ -282,6 +294,9 @@ elif option == "Reorder Pages":
                 del st.session_state.updated_pdf
             st.success("PDF has been reset to the original upload state!")
             st.rerun()
+
+        if st.button("Reset Selection"):
+            st.session_state.selected_pages = []
 
         st.write("Click on a thumbnail to select/deselect pages for reordering:")
 
@@ -359,6 +374,9 @@ elif option == "Delete or Extract Pages":
                 del st.session_state.updated_pdf
             st.success("PDF has been reset to the original upload state!")
             st.rerun()
+
+        if st.button("Reset Selection"):
+            st.session_state.selected_pages = []
 
         st.write("Click on a thumbnail to select/deselect pages to delete or extract:")
 
