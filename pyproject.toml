@@ -12,6 +12,9 @@ pypdf = "^5.0.1"
 pdf2image = "^1.17.0"
 
 
+[tool.poetry.group.dev.dependencies]
+pip-licenses = "^5.0.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
