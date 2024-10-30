@@ -130,18 +130,20 @@ st.title("PDF Editor")
 st.header(option)
 
 if option == "Merge PDFs":
-    uploaded_file = st.file_uploader("Upload PDF files", type=["pdf"], accept_multiple_files=True)
+    uploaded_files = st.file_uploader("Upload PDF files", type=["pdf"], accept_multiple_files=True)
 
-    if uploaded_file:
-        if "file_hash_m" in st.session_state and st.session_state.file_hash_m != calculate_object_hash(uploaded_file):
+    if uploaded_files:
+        if "file_hash_m" in st.session_state and st.session_state.file_hash_m != calculate_object_hash(uploaded_files):
             del st.session_state.pdf_images_
             if "merge_order" in st.session_state:
                 del st.session_state.merge_order
 
-        st.session_state.file_hash_m = calculate_object_hash(uploaded_file)
+        st.session_state.file_hash_m = calculate_object_hash(uploaded_files)
 
         st.session_state.pdf_images_ = []
-        for file in uploaded_file:
+        file_names = [file.name for file in uploaded_files]
+
+        for file in uploaded_files:
             st.session_state.pdf_images_.append(convert_from_bytes(file.read(), first_page=0, last_page=1))
 
         if "merge_order" not in st.session_state:
@@ -160,7 +162,7 @@ if option == "Merge PDFs":
 
         cols = st.columns(cols_per_row)
 
-        for i, (pdf_image) in enumerate(st.session_state.pdf_images_):
+        for i, (pdf_image, file_name) in enumerate(zip(st.session_state.pdf_images_, file_names)):
             col = cols[i % cols_per_row]
             with col:
                 if st.button(f"PDF {i+1}", key=f"PDF_{i+1}"):
@@ -170,7 +172,7 @@ if option == "Merge PDFs":
                         st.session_state.merge_order.append(i)
 
                 tmp_image = resize_and_add_black_border(pdf_image[0], image_size, image_size)
-                st.image(tmp_image, caption=f"PDF {i+1}", width=image_size)
+                st.image(tmp_image, caption=file_name, width=image_size)
 
         if st.session_state.merge_order:
             st.write(f"Selected merge order: {[i + 1 for i in st.session_state.merge_order]}")
@@ -178,7 +180,7 @@ if option == "Merge PDFs":
             st.write("No PDF selected for merging.")
 
         if st.session_state.merge_order:
-            merged_pdfs = merge_pdfs(uploaded_file, st.session_state.merge_order)
+            merged_pdfs = merge_pdfs(uploaded_files, st.session_state.merge_order)
             st.download_button(
                 label="Download Merged PDF",
                 data=merged_pdfs,
