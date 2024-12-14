@@ -30,12 +30,14 @@ def merge_pdfs(pdf_list, merge_order):
 def rotate_pdf(pdf_file, rotation_angle, selected_pages):
     pdf_reader = PdfReader(pdf_file)
     pdf_writer = PdfWriter()
+    metadata = pdf_reader.metadata
 
     for page_num, page in enumerate(pdf_reader.pages):
         if page_num in selected_pages:
             page.rotate(rotation_angle)
         pdf_writer.add_page(page)
     
+    pdf_writer.add_metadata(metadata)
     output = BytesIO()
     pdf_writer.write(output)
     output.seek(0)
@@ -44,6 +46,7 @@ def rotate_pdf(pdf_file, rotation_angle, selected_pages):
 def reorder_pages(pdf_file, selected_pages, target_page):
     pdf_reader = PdfReader(pdf_file)
     pdf_writer = PdfWriter()
+    metadata = pdf_reader.metadata
 
     all_pages = list(range(len(pdf_reader.pages)))
     
@@ -58,6 +61,7 @@ def reorder_pages(pdf_file, selected_pages, target_page):
     for page_num in all_pages:
         pdf_writer.add_page(pdf_reader.pages[page_num])
     
+    pdf_writer.add_metadata(metadata)
     output = BytesIO()
     pdf_writer.write(output)
     output.seek(0)
@@ -87,11 +91,13 @@ def resize_and_add_black_border(img, target_width, target_height):
 def delete_pages(pdf_file, selected_pages):
     pdf_reader = PdfReader(pdf_file)
     pdf_writer = PdfWriter()
+    metadata = pdf_reader.metadata
 
     for page_num, page in enumerate(pdf_reader.pages):
         if page_num not in selected_pages:
             pdf_writer.add_page(page)
     
+    pdf_writer.add_metadata(metadata)
     output = BytesIO()
     pdf_writer.write(output)
     output.seek(0)
@@ -100,10 +106,30 @@ def delete_pages(pdf_file, selected_pages):
 def extract_pages(pdf_file, selected_pages):
     pdf_reader = PdfReader(pdf_file)
     pdf_writer = PdfWriter()
+    metadata = pdf_reader.metadata
 
     for page_num in selected_pages:
         pdf_writer.add_page(pdf_reader.pages[page_num])
     
+    pdf_writer.add_metadata(metadata)
+    output = BytesIO()
+    pdf_writer.write(output)
+    output.seek(0)
+    return output
+
+def get_metadata(pdf_file):
+    pdf_reader = PdfReader(pdf_file)
+    return pdf_reader.metadata
+
+def edit_metadata(pdf_file, new_metadata):
+    pdf_reader = PdfReader(pdf_file)
+    pdf_writer = PdfWriter()
+
+    for page in pdf_reader.pages:
+        pdf_writer.add_page(page)
+
+    pdf_writer.add_metadata(new_metadata)
+
     output = BytesIO()
     pdf_writer.write(output)
     output.seek(0)
@@ -116,7 +142,7 @@ def calculate_object_hash(obj):
 
 option = st.sidebar.radio(
     "Select an action",
-    options=["Merge PDFs", "Rotate Pages", "Reorder Pages", "Delete or Extract Pages", "Unlock PDF"]
+    options=["Merge PDFs", "Rotate Pages", "Reorder Pages", "Delete or Extract Pages", "Unlock PDF", "Edit PDF Metadata"]
 )
 
 with st.sidebar.expander("Settings", expanded=False):
@@ -463,3 +489,42 @@ elif option == "Unlock PDF":
                 st.error(f"An error occurred: {e}")
     else:
         st.info("Please upload a password-protected PDF.")
+elif option == "Edit PDF Metadata":
+    uploaded_file = st.file_uploader("Upload a PDF file to edit metadata", type=["pdf"])
+
+    if uploaded_file:
+        metadata = get_metadata(uploaded_file)
+        st.subheader("Current Metadata")
+
+        if metadata:
+            st.json({key: str(value) for key, value in metadata.items()})
+        else:
+            st.write("No metadata found in this PDF.")
+
+        st.subheader("Edit Metadata")
+
+        updated_metadata = {}
+        if metadata:
+            for key, value in metadata.items():
+                new_value = st.text_input(f"{key}", value=str(value) if value else "")
+                if new_value.strip():
+                    updated_metadata[key] = new_value
+        else:
+            st.info("No metadata found. Add new metadata below:")
+            for default_key in ["/Title", "/Author", "/Subject", "/Keywords"]:
+                new_value = st.text_input(default_key, value="")
+                if new_value.strip():
+                    updated_metadata[default_key] = new_value
+
+        if st.button("Apply Metadata Changes"):
+            updated_pdf = edit_metadata(uploaded_file, updated_metadata)
+
+            st.success("Metadata updated successfully!")
+            st.download_button(
+                label="Download PDF with Updated Metadata",
+                data=updated_pdf,
+                file_name="updated_metadata.pdf",
+                mime="application/pdf"
+            )
+    else:
+        st.info("Please upload a PDF file to edit its metadata.")
