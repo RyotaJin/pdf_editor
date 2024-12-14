@@ -116,7 +116,7 @@ def calculate_object_hash(obj):
 
 option = st.sidebar.radio(
     "Select an action",
-    options=["Merge PDFs", "Rotate Pages", "Reorder Pages", "Delete or Extract Pages"]
+    options=["Merge PDFs", "Rotate Pages", "Reorder Pages", "Delete or Extract Pages", "Unlock PDF"]
 )
 
 with st.sidebar.expander("Settings", expanded=False):
@@ -431,3 +431,35 @@ elif option == "Delete or Extract Pages":
             )
     else:
         st.info("Please upload a PDF file to delete or extract pages.")
+elif option == "Unlock PDF":
+    uploaded_file = st.file_uploader("Upload a password-protected PDF", type=["pdf"])
+
+    if uploaded_file:
+        password = st.text_input("Enter the password", type="password")
+
+        if st.button("Unlock PDF"):
+            try:
+                pdf_reader = PdfReader(uploaded_file)
+                if pdf_reader.decrypt(password):
+                    pdf_writer = PdfWriter()
+                    for page in pdf_reader.pages:
+                        pdf_writer.add_page(page)
+
+                    output = BytesIO()
+                    pdf_writer.write(output)
+                    output.seek(0)
+
+                    st.success("Password removed successfully!")
+                    st.download_button(
+                        label="Download Unlocked PDF",
+                        data=output,
+                        file_name="unlocked_pdf.pdf",
+                        mime="application/pdf"
+                    )
+                else:
+                    st.error("Incorrect password. Please try again.")
+
+            except Exception as e:
+                st.error(f"An error occurred: {e}")
+    else:
+        st.info("Please upload a password-protected PDF.")
