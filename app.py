@@ -476,10 +476,11 @@ elif option == "Unlock PDF":
                     output.seek(0)
 
                     st.success("Password removed successfully!")
+                    base_name, _ = os.path.splitext(uploaded_file.name)
                     st.download_button(
                         label="Download Unlocked PDF",
                         data=output,
-                        file_name="unlocked_pdf.pdf",
+                        file_name=base_name + f"_unlocked.pdf",
                         mime="application/pdf"
                     )
                 else:
@@ -519,11 +520,12 @@ elif option == "Edit PDF Metadata":
         if st.button("Apply Metadata Changes"):
             updated_pdf = edit_metadata(uploaded_file, updated_metadata)
 
+            base_name, _ = os.path.splitext(uploaded_file.name)
             st.success("Metadata updated successfully!")
             st.download_button(
                 label="Download PDF with Updated Metadata",
                 data=updated_pdf,
-                file_name="updated_metadata.pdf",
+                file_name=base_name + f"_metadata_updated.pdf",
                 mime="application/pdf"
             )
     else:
