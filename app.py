@@ -461,33 +461,37 @@ elif option == "Unlock PDF":
     uploaded_file = st.file_uploader("Upload a password-protected PDF", type=["pdf"])
 
     if uploaded_file:
-        password = st.text_input("Enter the password", type="password")
+        pdf_reader = PdfReader(uploaded_file)
 
-        if st.button("Unlock PDF"):
-            try:
-                pdf_reader = PdfReader(uploaded_file)
-                if pdf_reader.decrypt(password):
-                    pdf_writer = PdfWriter()
-                    for page in pdf_reader.pages:
-                        pdf_writer.add_page(page)
+        if not pdf_reader.is_encrypted:
+            st.success("This PDF is not password-protected.")
+        else:
+            password = st.text_input("Enter the password", type="password")
 
-                    output = BytesIO()
-                    pdf_writer.write(output)
-                    output.seek(0)
+            if st.button("Unlock PDF"):
+                try:
+                    if pdf_reader.decrypt(password):
+                        pdf_writer = PdfWriter()
+                        for page in pdf_reader.pages:
+                            pdf_writer.add_page(page)
 
-                    st.success("Password removed successfully!")
-                    base_name, _ = os.path.splitext(uploaded_file.name)
-                    st.download_button(
-                        label="Download Unlocked PDF",
-                        data=output,
-                        file_name=base_name + f"_unlocked.pdf",
-                        mime="application/pdf"
-                    )
-                else:
-                    st.error("Incorrect password. Please try again.")
+                        output = BytesIO()
+                        pdf_writer.write(output)
+                        output.seek(0)
 
-            except Exception as e:
-                st.error(f"An error occurred: {e}")
+                        st.success("Password removed successfully!")
+                        base_name, _ = os.path.splitext(uploaded_file.name)
+                        st.download_button(
+                            label="Download Unlocked PDF",
+                            data=output,
+                            file_name=base_name + f"_unlocked.pdf",
+                            mime="application/pdf"
+                        )
+                    else:
+                        st.error("Incorrect password. Please try again.")
+
+                except Exception as e:
+                    st.error(f"An error occurred: {e}")
     else:
         st.info("Please upload a password-protected PDF.")
 elif option == "Edit PDF Metadata":
