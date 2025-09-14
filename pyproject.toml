@@ -1,20 +1,19 @@
-[tool.poetry]
+[project]
 name = "pdf-editor"
 version = "0.1.0"
 description = ""
-authors = ["Ryota Jin"]
+authors = [
+  { name = "Ryota Jin" }
+]
 readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "streamlit>=1.39.0,<2.0.0",
+  "pypdf>=5.0.1,<6.0.0",
+  "pdf2image>=1.17.0,<2.0.0",
+]
 
-[tool.poetry.dependencies]
-python = "^3.12"
-streamlit = "^1.39.0"
-pypdf = "^5.0.1"
-pdf2image = "^1.17.0"
-
-
-[tool.poetry.group.dev.dependencies]
-pip-licenses = "^5.0.0"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[project.optional-dependencies]
+dev = [
+  "pip-licenses>=5.0.0,<6.0.0",
+]
